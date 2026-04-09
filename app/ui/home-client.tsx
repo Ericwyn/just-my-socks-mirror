@@ -8,6 +8,7 @@ import QRCode from 'qrcode'
 type HomeClientProps = {
   initialService: string
   initialId: string
+  initialKey: string
 }
 
 type BandwidthResponse = {
@@ -91,13 +92,20 @@ function buildSubscriptionUrl(params: {
   origin: string
   service: string
   id: string
+  key: string
+  useSecureMode: boolean
   excludeShadowsocks: boolean
   excludeVmess: boolean
   useDomains: boolean
 }) {
-  const url = new URL('/members/getsub.php', params.origin)
-  url.searchParams.set('service', params.service)
-  url.searchParams.set('id', params.id)
+  const url = new URL(params.useSecureMode ? '/api/sublink' : '/members/getsub.php', params.origin)
+
+  if (params.useSecureMode) {
+    url.searchParams.set('key', params.key)
+  } else {
+    url.searchParams.set('service', params.service)
+    url.searchParams.set('id', params.id)
+  }
 
   if (params.excludeShadowsocks) {
     url.searchParams.set('noss', '1')
@@ -114,7 +122,20 @@ function buildSubscriptionUrl(params: {
   return url.toString()
 }
 
-export function HomeClient({ initialService, initialId }: HomeClientProps) {
+function buildCounterPath(params: { service: string; id: string; key: string; useSecureMode: boolean }) {
+  const searchParams = new URLSearchParams()
+
+  if (params.useSecureMode) {
+    searchParams.set('key', params.key)
+    return `/api/counter?${searchParams.toString()}`
+  }
+
+  searchParams.set('service', params.service)
+  searchParams.set('id', params.id)
+  return `/members/getbwcounter.php?${searchParams.toString()}`
+}
+
+export function HomeClient({ initialService, initialId, initialKey }: HomeClientProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -122,6 +143,7 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
   const [idInput, setIdInput] = useState(initialId)
   const [service, setService] = useState(initialService)
   const [id, setId] = useState(initialId)
+  const [key, setKey] = useState(initialKey)
   const [excludeShadowsocks, setExcludeShadowsocks] = useState(false)
   const [excludeVmess, setExcludeVmess] = useState(false)
   const [useDomains, setUseDomains] = useState(true)
@@ -133,7 +155,8 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
   const [qrCodeLoading, setQrCodeLoading] = useState(false)
   const [qrCodeError, setQrCodeError] = useState('')
 
-  const missingCredentials = !service || !id
+  const useSecureMode = Boolean(key)
+  const missingCredentials = !useSecureMode && (!service || !id)
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -142,14 +165,27 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
   useEffect(() => {
     const nextService = searchParams.get('service') || ''
     const nextId = searchParams.get('id') || ''
+    const nextKey = searchParams.get('key') || ''
     setService(nextService)
     setId(nextId)
+    setKey(nextKey)
     setServiceInput(nextService)
     setIdInput(nextId)
   }, [searchParams])
 
+  const counterPath = useMemo(
+    () =>
+      buildCounterPath({
+        service,
+        id,
+        key,
+        useSecureMode,
+      }),
+    [service, id, key, useSecureMode],
+  )
+
   useEffect(() => {
-    if (!service || !id) {
+    if (missingCredentials) {
       setUsageState(DEFAULT_USAGE_STATE)
       return
     }
@@ -160,13 +196,10 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
       setUsageState({ loading: true, error: '', data: null, fetchedAt: '' })
 
       try {
-        const response = await fetch(
-          `/members/getbwcounter.php?service=${encodeURIComponent(service)}&id=${encodeURIComponent(id)}`,
-          {
-            signal: controller.signal,
-            cache: 'no-store',
-          },
-        )
+        const response = await fetch(counterPath, {
+          signal: controller.signal,
+          cache: 'no-store',
+        })
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`)
@@ -205,7 +238,7 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
     void loadUsage()
 
     return () => controller.abort()
-  }, [service, id])
+  }, [counterPath, missingCredentials])
 
   const subscriptionUrl = useMemo(
     () =>
@@ -213,11 +246,13 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
         origin,
         service,
         id,
+        key,
+        useSecureMode,
         excludeShadowsocks,
         excludeVmess,
         useDomains,
       }),
-    [origin, service, id, excludeShadowsocks, excludeVmess, useDomains],
+    [origin, service, id, key, useSecureMode, excludeShadowsocks, excludeVmess, useDomains],
   )
 
   useEffect(() => {
@@ -297,6 +332,7 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
     event.preventDefault()
 
     const params = new URLSearchParams(searchParams.toString())
+    params.delete('key')
     params.set('service', serviceInput.trim())
     params.set('id', idInput.trim())
     router.push(`${pathname}?${params.toString()}`)
@@ -310,6 +346,10 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
 
   function closeQrModal() {
     setShowQrModal(false)
+  }
+
+  function resetToManualMode() {
+    router.push(pathname)
   }
 
   return (
@@ -370,16 +410,25 @@ export function HomeClient({ initialService, initialId }: HomeClientProps) {
           <span>本月已用</span>
           <strong>{usageMetrics ? `${usageMetrics.percentage.toFixed(1)}%` : '--'}</strong>
         </div>
-        <div className="strip-chip account-chip">
-          <span>service</span>
-          <strong>{service || '未填写'}</strong>
-        </div>
-        <div className="strip-chip account-chip">
-          <span>id</span>
-          <strong>{id || '未填写'}</strong>
-        </div>
-        <button className="strip-chip switch-chip" type="button" onClick={() => router.push(pathname)}>
-          更换账号
+        {useSecureMode ? (
+          <div className="strip-chip account-chip">
+            <span>模式</span>
+            <strong>安全短链</strong>
+          </div>
+        ) : (
+          <>
+            <div className="strip-chip account-chip">
+              <span>service</span>
+              <strong>{service || '未填写'}</strong>
+            </div>
+            <div className="strip-chip account-chip">
+              <span>id</span>
+              <strong>{id || '未填写'}</strong>
+            </div>
+          </>
+        )}
+        <button className="strip-chip switch-chip" type="button" onClick={resetToManualMode}>
+          {useSecureMode ? '退出短链' : '更换账号'}
         </button>
       </section>
 
