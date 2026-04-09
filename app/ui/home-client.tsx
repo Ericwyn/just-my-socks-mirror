@@ -511,19 +511,19 @@ export function HomeClient({ initialService, initialId, initialKey }: HomeClient
                 onChange={(event) => setExcludeShadowsocks(event.target.checked)}
               />
               <div>
-                <strong>Shadowsocks</strong>
+                <strong>排除SS节点</strong>
               </div>
             </label>
             <label className="toggle-card compact-toggle-card">
               <input type="checkbox" checked={excludeVmess} onChange={(event) => setExcludeVmess(event.target.checked)} />
               <div>
-                <strong>Vmess</strong>
+                <strong>排除Vmess节点</strong>
               </div>
             </label>
             <label className="toggle-card compact-toggle-card active-default">
               <input type="checkbox" checked={useDomains} onChange={(event) => setUseDomains(event.target.checked)} />
               <div>
-                <strong>域名节点</strong>
+                <strong>排除IP节点</strong>
               </div>
             </label>
           </div>
