@@ -362,8 +362,8 @@ export function HomeClient({ initialService, initialId, initialKey }: HomeClient
         <div className="modal-backdrop">
           <form className="modal-card entry-modal" onSubmit={submitCredentials}>
             <div className="modal-kicker">Just My Socks Mirror</div>
-            <h1>输入订阅参数，立刻生成镜像入口</h1>
-            <p>适合在官方地址不稳定时，快速查看剩余额度并生成可直接使用的订阅链接。</p>
+            <h1>订阅配置</h1>
+            <p>输入订阅参数, 访问订阅详情页面和链接, 适合在官方地址不稳定时，快速查看剩余额度并生成可直接使用的订阅链接。</p>
             <label className="field">
               <span>service</span>
               <input value={serviceInput} onChange={(event) => setServiceInput(event.target.value)} required />
@@ -404,30 +404,9 @@ export function HomeClient({ initialService, initialId, initialKey }: HomeClient
         </div>
       ) : null}
 
-      <section className="top-strip">
-        <div className="strip-chip brand-chip">Mirror Dashboard</div>
-        <div className="strip-chip stat-chip">
-          <span>本月已用</span>
-          <strong>{usageMetrics ? `${usageMetrics.percentage.toFixed(1)}%` : '--'}</strong>
-        </div>
-        {useSecureMode ? (
-          <div className="strip-chip account-chip">
-            <span>模式</span>
-            <strong>安全短链</strong>
-          </div>
-        ) : (
-          <>
-            <div className="strip-chip account-chip">
-              <span>service</span>
-              <strong>{service || '未填写'}</strong>
-            </div>
-            <div className="strip-chip account-chip">
-              <span>id</span>
-              <strong>{id || '未填写'}</strong>
-            </div>
-          </>
-        )}
-        <button className="strip-chip switch-chip" type="button" onClick={resetToManualMode}>
+      <section className="top-strip compact-top-strip">
+        <div className="brand-heading">Mirror Dashboard</div>
+        <button className="primary-button top-strip-button" type="button" onClick={resetToManualMode}>
           {useSecureMode ? '退出短链' : '更换账号'}
         </button>
       </section>
@@ -446,7 +425,7 @@ export function HomeClient({ initialService, initialId, initialKey }: HomeClient
           <div className="section-header compact-header">
             <div>
               <div className="section-kicker">Bandwidth</div>
-              <h2>本月额度</h2>
+              <h2>本月总额度</h2>
             </div>
             <span className="inline-meta">{usageState.loading ? '同步中' : usageState.fetchedAt ? `截至 ${usageState.fetchedAt}` : ''}</span>
           </div>

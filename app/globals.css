@@ -114,6 +114,10 @@ img {
   margin-bottom: 14px;
 }
 
+.compact-top-strip {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .strip-chip {
   display: flex;
   align-items: center;
@@ -137,10 +141,14 @@ img {
   text-overflow: ellipsis;
 }
 
-.brand-chip {
+.brand-heading {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
   color: var(--accent-strong);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: clamp(1.7rem, 4vw, 2.35rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
   text-transform: uppercase;
 }
 
@@ -153,6 +161,13 @@ img {
   justify-content: center;
   color: var(--foreground);
   font-weight: 700;
+}
+
+.top-strip-button {
+  min-height: 52px;
+  padding-inline: 18px;
+  border-radius: 18px;
+  white-space: nowrap;
 }
 
 .compact-hero {
@@ -201,6 +216,7 @@ img {
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
+  margin-bottom: 10px;
   border-radius: 999px;
   background: rgba(201, 110, 61, 0.12);
   color: var(--accent-strong);
@@ -521,9 +537,17 @@ img {
 
   .top-strip,
   .dashboard-grid,
-  .compact-toggle-row,
-  .usage-meta-grid {
+  .compact-toggle-row {
     grid-template-columns: 1fr;
+  }
+
+  .usage-meta-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .brand-heading {
+    min-height: auto;
+    font-size: 1.35rem;
   }
 
   .panel-card,

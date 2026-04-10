@@ -13,6 +13,8 @@ const HOP_BY_HOP_HEADERS = [
   'content-length',
 ]
 
+const RESPONSE_HEADERS_TO_STRIP = ['content-encoding', 'content-length']
+
 type FixedMembersProxyOptions = {
   request: Request
   pathname: string
@@ -20,7 +22,7 @@ type FixedMembersProxyOptions = {
 }
 
 type SecureProxyConfig = {
-  key: string
+  keys: string[]
   service: string
   id: string
 }
@@ -28,6 +30,15 @@ type SecureProxyConfig = {
 function normalizeEnvValue(value: string | undefined) {
   const normalized = value?.trim() ?? ''
   return normalized || null
+}
+
+function normalizeEnvList(value: string | undefined) {
+  const normalized = value
+    ?.split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  return normalized && normalized.length > 0 ? normalized : null
 }
 
 export function getUpstreamBaseUrl() {
@@ -64,7 +75,9 @@ export function createResponseHeaders(upstreamHeaders: Headers) {
   const headers = new Headers()
 
   upstreamHeaders.forEach((value, key) => {
-    if (!HOP_BY_HOP_HEADERS.includes(key.toLowerCase())) {
+    const normalizedKey = key.toLowerCase()
+
+    if (!HOP_BY_HOP_HEADERS.includes(normalizedKey) && !RESPONSE_HEADERS_TO_STRIP.includes(normalizedKey)) {
       headers.set(key, value)
     }
   })
@@ -98,15 +111,15 @@ export async function proxyToUpstream(request: Request, upstreamUrl: URL) {
 }
 
 export function getSecureProxyConfig(): SecureProxyConfig | null {
-  const key = normalizeEnvValue(process.env.SEC_KEY)
+  const keys = normalizeEnvList(process.env.SEC_KEY)
   const service = normalizeEnvValue(process.env.SEC_SERVICE)
   const id = normalizeEnvValue(process.env.SEC_ID)
 
-  if (!key || !service || !id) {
+  if (!keys || !service || !id) {
     return null
   }
 
-  return { key, service, id }
+  return { keys, service, id }
 }
 
 export function authorizeSecureProxy(request: Request) {
@@ -138,7 +151,7 @@ export function authorizeSecureProxy(request: Request) {
     }
   }
 
-  if (key !== config.key) {
+  if (!config.keys.includes(key)) {
     return {
       config: null,
       errorResponse: Response.json(
