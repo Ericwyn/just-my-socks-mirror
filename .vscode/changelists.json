@@ -3,13 +3,10 @@
     {
       "name": "Default",
       "files": [
-        "app/ui/home-client.tsx",
-        "package-lock.json",
         ".vscode/changelists.json",
-        "app/globals.css",
-        "app/lib/proxy.ts",
-        "next-env.d.ts",
-        "README.md"
+        "screenshot/screenshot1.png",
+        "README.md",
+        "screenshot/screenshot2.png"
       ]
     }
   ],
